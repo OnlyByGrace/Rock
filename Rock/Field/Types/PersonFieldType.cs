@@ -16,6 +16,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Web.UI;
@@ -125,10 +126,14 @@ namespace Rock.Field.Types
             if ( !string.IsNullOrWhiteSpace( value ) )
             {
                 Guid guid = value.AsGuid();
-                formattedValue = new PersonAliasService( new RockContext() ).Queryable()
+                using ( var rockContext = new RockContext() )
+                {
+                    formattedValue = new PersonAliasService( rockContext ).Queryable()
+                    .AsNoTracking()
                     .Where( a => a.Guid.Equals( guid ) )
                     .Select( a => a.Person.NickName + " " + a.Person.LastName )
                     .FirstOrDefault();
+                }
             }
 
             return base.FormatValue( parentControl, formattedValue, null, condensed );
@@ -196,10 +201,13 @@ namespace Rock.Field.Types
 
                 if ( personId.HasValue )
                 {
-                    var personAlias = new PersonAliasService( new RockContext() ).GetByAliasId( personId.Value );
-                    if ( personAlias != null )
+                    using ( var rockContext = new RockContext() )
                     {
-                        result = personAlias.Guid.ToString();
+                        var personAlias = new PersonAliasService( rockContext ).GetByAliasId( personId.Value );
+                        if ( personAlias != null )
+                        {
+                            result = personAlias.Guid.ToString();
+                        }
                     }
                 }
             }
@@ -215,20 +223,23 @@ namespace Rock.Field.Types
         /// <param name="value">The value.</param>
         public override void SetEditValue( System.Web.UI.Control control, Dictionary<string, ConfigurationValue> configurationValues, string value )
         {
-            if ( value != null )
+            PersonPicker ppPerson = control as PersonPicker;
+            if ( ppPerson != null )
             {
-                PersonPicker ppPerson = control as PersonPicker;
-                if ( ppPerson != null )
+                Person person = null;
+                Guid? personAliasGuid = value.AsGuidOrNull();
+                if ( personAliasGuid.HasValue )
                 {
-                    Guid guid = Guid.Empty;
-                    Guid.TryParse( value, out guid );
-
-                    var person = new PersonAliasService( new RockContext() ).Queryable()
-                        .Where( a => a.Guid.Equals(guid))
-                        .Select( a => a.Person)
-                        .FirstOrDefault();
-                    ppPerson.SetValue( person );
+                    using ( var rockContext = new RockContext() )
+                    {
+                        person = new PersonAliasService( rockContext ).Queryable()
+                            .Where( a => a.Guid == personAliasGuid.Value )
+                            .Select( a => a.Person )
+                            .FirstOrDefault();
+                    }
                 }
+
+                ppPerson.SetValue( person );
             }
         }
 
@@ -266,7 +277,7 @@ namespace Rock.Field.Types
                 }
             }
 
-            return null;
+            return new NoAttributeFilterExpression();
         }
 
         #endregion

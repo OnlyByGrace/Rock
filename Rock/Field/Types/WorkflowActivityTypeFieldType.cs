@@ -16,6 +16,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -144,10 +145,15 @@ namespace Rock.Field.Types
 
                 if ( string.IsNullOrWhiteSpace( formattedValue ) )
                 {
-                    formattedValue = new WorkflowActivityTypeService( new RockContext() ).Queryable()
-                        .Where( a => a.Guid.Equals( guid ) )
-                        .Select( a => a.Name )
-                        .FirstOrDefault();
+                    using ( var rockContext = new RockContext() )
+                    {
+                        formattedValue = new WorkflowActivityTypeService( rockContext )
+                            .Queryable()
+                            .AsNoTracking()
+                            .Where( a => a.Guid.Equals( guid ) )
+                            .Select( a => a.Name )
+                            .FirstOrDefault();
+                    }
                 }
             }
 
@@ -219,9 +225,10 @@ namespace Rock.Field.Types
         /// <returns></returns>
         public override string GetEditValue( Control control, Dictionary<string, ConfigurationValue> configurationValues )
         {
-            if ( control != null && control is RockDropDownList )
+            var picker = control as RockDropDownList;
+            if ( picker != null )
             {
-                return ( ( RockDropDownList ) control ).SelectedValue;
+                return picker.SelectedValue;
             }
 
             return string.Empty;
@@ -235,12 +242,10 @@ namespace Rock.Field.Types
         /// <param name="value">The value.</param>
         public override void SetEditValue( Control control, Dictionary<string, ConfigurationValue> configurationValues, string value )
         {
-            if ( value != null )
+            var picker = control as RockDropDownList;
+            if ( picker != null )
             {
-                if ( control != null && control is RockDropDownList )
-                {
-                    ( ( RockDropDownList ) control ).SetValue( value?.ToUpper() );
-                }
+                picker.SetValue( value.AsGuidOrNull() );
             }
         }
 

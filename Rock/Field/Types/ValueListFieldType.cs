@@ -178,12 +178,16 @@ namespace Rock.Field.Types
             
             if ( configurationValues != null && configurationValues.ContainsKey( "definedtype" ) )
             {
-                for( int i = 0; i < values.Length; i++)
+                int definedTypeId = 0;
+                if ( Int32.TryParse( configurationValues["definedtype"].Value, out definedTypeId ) )
                 {
-                    var definedValue = DefinedValueCache.Read( values[i].AsInteger() );
-                    if ( definedValue != null)
+                    for( int i = 0; i < values.Length; i++)
                     {
-                        values[i] = definedValue.Value;
+                        var definedValue = DefinedValueCache.Get( values[i].AsInteger() );
+                        if ( definedValue != null)
+                        {
+                            values[i] = definedValue.Value;
+                        }
                     }
                 }
             }
@@ -254,10 +258,12 @@ namespace Rock.Field.Types
         /// <returns></returns>
         public override string GetEditValue( Control control, Dictionary<string, ConfigurationValue> configurationValues )
         {
-            if ( control != null && control is ValueList )
+            var picker = control as ValueList;
+            if ( picker != null )
             {
-                return ( (ValueList)control ).Value;
+                return picker.Value;
             }
+
             return null;
         }
 
@@ -269,9 +275,10 @@ namespace Rock.Field.Types
         /// <param name="value">The value.</param>
         public override void SetEditValue( Control control, Dictionary<string, ConfigurationValue> configurationValues, string value )
         {
-            if ( value!= null && control != null && control is ValueList )
+            var picker = control as ValueList;
+            if ( picker != null )
             {
-                ( (ValueList)control ).Value = value;
+                picker.Value = value;
             }
         }
 

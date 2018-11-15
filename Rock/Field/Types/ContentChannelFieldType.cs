@@ -48,12 +48,15 @@ namespace Rock.Field.Types
             string formattedValue = string.Empty;
 
             Guid? guid = value.AsGuidOrNull();
-            if (guid.HasValue)
+            if ( guid.HasValue )
             {
-                var contentChannel = new ContentChannelService( new RockContext() ).Get( guid.Value );
-                if (contentChannel != null)
-                { 
-                    formattedValue = contentChannel.Name;
+                using ( var rockContext = new RockContext() )
+                {
+                    var contentChannelName = new ContentChannelService( rockContext ).GetSelect( guid.Value, a => a.Name );
+                    if ( contentChannelName != null )
+                    {
+                        formattedValue = contentChannelName;
+                    }
                 }
             }
 
